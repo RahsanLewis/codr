@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import Statistics from '../Statistics/Statistics'
 
 interface TypingBoxProps {
   className?: string
@@ -9,10 +10,35 @@ const TypingBox: React.FC<TypingBoxProps> = ({ className }) => {
   const inputRef = useRef<HTMLDivElement>(null)
   const [typedValue, setTypedValue] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+  const [startTime, setStartTime] = useState<Date | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  const hasFinished = typedValue.length === targetSentence.length
+
+  useEffect(() => {
+    if (!startTime) {
+      return
+    }
+
+    if (hasFinished) {
+      const finalSeconds = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000))
+      setElapsedSeconds(finalSeconds)
+      return
+    }
+
+    const timerId = window.setInterval(() => {
+      const seconds = Math.max(0, Math.floor((Date.now() - startTime.getTime()) / 1000))
+      setElapsedSeconds(seconds)
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timerId)
+    }
+  }, [startTime, hasFinished])
 
   const normalizeChar = (value: string): string => value.toLowerCase()
 
@@ -30,8 +56,35 @@ const TypingBox: React.FC<TypingBoxProps> = ({ className }) => {
     return true
   }, [targetSentence, typedValue])
 
+  const accuracy = useMemo(() => {
+    if (typedValue.length === 0) {
+      return 100
+    }
+
+    const correctCount = Array.from(typedValue).filter(
+      (typedChar, index) =>
+        normalizeChar(typedChar) === normalizeChar(targetSentence[index] ?? '')
+    ).length
+
+    return (correctCount / typedValue.length) * 100
+  }, [typedValue, targetSentence])
+
+  const speed = useMemo(() => {
+    if (!startTime || typedValue.length === 0 || elapsedSeconds === 0) {
+      return 0
+    }
+
+    const minutesElapsed = elapsedSeconds / 60
+    return (typedValue.length / 5) / minutesElapsed
+  }, [startTime, typedValue.length, elapsedSeconds])
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.metaKey || event.ctrlKey || event.altKey) {
+      return
+    }
+
+    if (hasFinished) {
+      event.preventDefault()
       return
     }
 
@@ -43,10 +96,26 @@ const TypingBox: React.FC<TypingBoxProps> = ({ className }) => {
 
     if (event.key.length === 1) {
       event.preventDefault()
-      setTypedValue((prev) =>
-        prev.length < targetSentence.length ? `${prev}${event.key}` : prev
-      )
+      setTypedValue((prev) => {
+        if (prev.length >= targetSentence.length) {
+          return prev
+        }
+
+        if (prev.length === 0 && !startTime) {
+          setStartTime(new Date())
+          setElapsedSeconds(0)
+        }
+
+        return `${prev}${event.key}`
+      })
     }
+  }
+
+  const handleReset = () => {
+    setTypedValue('')
+    setStartTime(null)
+    setElapsedSeconds(0)
+    inputRef.current?.focus()
   }
 
   return (
@@ -58,6 +127,8 @@ const TypingBox: React.FC<TypingBoxProps> = ({ className }) => {
       </h1>
 
       <p className="mt-6 text-center text-cyan-100/80">{targetSentence}</p>
+
+      <Statistics speed={speed} accuracy={accuracy} elapsedSeconds={elapsedSeconds} />
 
       <div
         ref={inputRef}
@@ -97,24 +168,23 @@ const TypingBox: React.FC<TypingBoxProps> = ({ className }) => {
         })}
       </div>
 
-      <p className="mt-3 text-center text-sm text-cyan-100/70">
-        Accuracy:{' '}
-        {typedValue.length === 0
-          ? '100%'
-          : `${Math.round(
-              (Array.from(typedValue).filter(
-                (typedChar, index) =>
-                  normalizeChar(typedChar) === normalizeChar(targetSentence[index] ?? '')
-              ).length /
-                typedValue.length) *
-                100
-            )}%`}
-      </p>
-
-      {isComplete ? (
-        <p className="mt-4 text-center text-lg font-semibold text-emerald-400">
-          great job
-        </p>
+      {hasFinished ? (
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <p
+            className={`text-center text-lg font-semibold ${
+              isComplete ? 'text-emerald-400' : 'text-rose-400'
+            }`}
+          >
+            {isComplete ? 'great job' : 'nice try'}
+          </p>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="rounded-md border border-cyan-300/40 px-3 py-1.5 text-sm text-cyan-200 hover:bg-cyan-300/10"
+          >
+            Reset
+          </button>
+        </div>
       ) : null}
     </section>
   )
