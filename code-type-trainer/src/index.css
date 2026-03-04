@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --primary: #a5b4fc;
+  --correct: #86efac;
+  --error: #fca5a5;
+  --cursor: #c084fc;
+
+  --color-primary: #a5b4fc;
+  --color-correct: #86efac;
+  --color-error: #fca5a5;
+  --color-cursor: #c084fc;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco,
+      Consolas, 'Liberation Mono', 'Courier New', monospace;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    background-color: #000000;
+  }
+
+  body {
+    overflow-x: hidden;
+    color: #d8dbeb;
+    background: #000000;
+  }
+
+  #root {
+    display: flex;
+    flex: 1;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+@layer utilities {
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .animate-blink {
+    animation: blink 1s steps(1, end) infinite;
+  }
+
+  .caret-w-2 {
+    caret-width: 2px;
+  }
+
+  .surface-glow {
+    box-shadow:
+      0 0 0 1px rgb(148 163 184 / 0.15),
+      0 0 40px rgb(165 180 252 / 0.08),
+      inset 0 0 30px rgb(99 102 241 / 0.05);
+  }
+}
+
+a,
+button,
+input,
+textarea,
+select,
+[role='button'],
+[role='textbox'],
+[tabindex] {
+  transition: all 150ms ease-out;
+}
